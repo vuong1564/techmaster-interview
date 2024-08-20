@@ -1,0 +1,37 @@
+stages:
+  - build
+  - test
+  - deploy
+
+variables:
+  NODE_ENV: production
+
+before_script:
+  - npm install
+
+build_job:
+  stage: build
+  script:
+    - echo "Building the application..."
+    - npm run build
+  artifacts:
+    paths:
+      - dist/
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+
+test_job:
+  stage: test
+  script:
+    - echo "Running tests..."
+    - npm test
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+
+deploy_job:
+  stage: deploy
+  script:
+    - echo "Deploying to production..."
+    - scp -r ./dist/* user@your-server:/var/www/html/your-app/
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'

@@ -1,0 +1,64 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Bước 1: Kiểm tra mã nguồn từ repository
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Bước 2: Thiết lập môi trường Python
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      # Bước 3: Cài đặt dependencies
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # Bước 4: Kiểm tra mã nguồn với pytest
+      - name: Run tests
+        run: |
+          pytest
+
+      # Bước 5: Tạo Docker image
+      - name: Build Docker image
+        run: |
+          docker build -t my-python-app .
+
+      # Bước 6: Đăng nhập vào Docker registry
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      # Bước 7: Push Docker image lên Docker Hub
+      - name: Push Docker image
+        run: |
+          docker tag my-python-app my-docker-repo/my-python-app:latest
+          docker push my-docker-repo/my-python-app:latest
+
+      # Bước 8: Deploy lên VM qua SSH
+      - name: Deploy to VM
+        uses: appleboy/ssh-action@v0.1.1
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            docker pull my-docker-repo/my-python-app:latest
+            docker run -d -p 80:80 my-docker-repo/my-python-app:latest

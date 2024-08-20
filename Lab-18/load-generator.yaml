@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: load-generator
+spec:
+  containers:
+  - name: load-generator
+    image: curlimages/curl
+    command: ["sh", "-c", "while true; do curl http://web-service; sleep 1; done"]
